@@ -22,27 +22,3 @@ jobs:
           git add -A
           git commit -m "Launch AirBridge 0.3.5"
           git push
-name: Bootstrap AirBridge source
-on:
-  push:
-    paths:
-      - 'AirBridge-bootstrap-source.zip.part-*'
-permissions:
-  contents: write
-jobs:
-  unpack:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Expand source tree
-        run: |
-          cat AirBridge-bootstrap-source.zip.part-* > AirBridge-bootstrap-source.zip
-          unzip -o AirBridge-bootstrap-source.zip
-          rm -f AirBridge-bootstrap-source.zip AirBridge-bootstrap-source.zip.part-* .github/workflows/bootstrap.yml
-      - name: Commit source
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Launch AirBridge 0.3.5"
-          git push
