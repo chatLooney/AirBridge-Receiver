@@ -1,4 +1,4 @@
-<p align="center"><img src="store/store_icon_512.png" alt="AirBridge icon" width="128" height="128"></p>
+<p align="center"><img src="design/icon/store_512.svg" alt="AirBridge icon" width="128" height="128"></p>
 
 <h1 align="center">AirBridge</h1>
 
