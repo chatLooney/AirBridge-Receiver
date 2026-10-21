@@ -1,38 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- SplashScreen icon: glyph on a 288 viewport. NOTE: the system masks the
-     splash icon to a circle using only the center ~66% of the drawable
-     (radius ~96 in this viewport), so broadcast rings can't be shown here —
-     the glyph's corners (~r83) just fit; anything larger is cropped. -->
+<!-- AirBridge splash icon. Kept inside Android's circular splash mask. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="288dp"
     android:height="288dp"
     android:viewportWidth="288"
     android:viewportHeight="288">
-    <!-- glyph: 108-space scaled 2.667x, centered at (144,144) -->
     <path
-        android:pathData="M98.7,90.7 L189.3,90.7 A18.7,18.7 0 0 1 208,109.3 L208,178.7 A18.7,18.7 0 0 1 189.3,197.3 L98.7,197.3 A18.7,18.7 0 0 1 80,178.7 L80,109.3 A18.7,18.7 0 0 1 98.7,90.7 Z"
+        android:pathData="M93.3,82.7 L194.7,82.7 A18.7,18.7 0,0 1,213.3 101.3 L213.3,181.3 A18.7,18.7 0,0 1,194.7 200 L93.3,200 A18.7,18.7 0,0 1,74.7 181.3 L74.7,101.3 A18.7,18.7 0,0 1,93.3 82.7 Z"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF78E0C4"
         android:strokeWidth="12"
+        android:strokeLineCap="round"
         android:strokeLineJoin="round">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="64" android:startY="75"
-                android:endX="224" android:endY="213">
-                <item android:offset="0.0" android:color="#FF7FB3FF" />
-                <item android:offset="1.0" android:color="#FFA78BFA" />
-            </gradient>
-        </aapt:attr>
     </path>
-    <path android:pathData="M144,118.7 L171.9,169.3 L116.1,169.3 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="linear"
-                android:startX="64" android:startY="75"
-                android:endX="224" android:endY="213">
-                <item android:offset="0.0" android:color="#FF7FB3FF" />
-                <item android:offset="1.0" android:color="#FFA78BFA" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <path android:pathData="M104,130.7 C125.3,109.3 162.7,109.3 184,130.7"
+        android:fillColor="@android:color/transparent" android:strokeColor="#FF78E0C4"
+        android:strokeWidth="10.7" android:strokeLineCap="round"/>
+    <path android:pathData="M120,149.3 C133.3,136 154.7,136 168,149.3"
+        android:fillColor="@android:color/transparent" android:strokeColor="#FF78E0C4"
+        android:strokeWidth="10.7" android:strokeLineCap="round"/>
+    <path android:pathData="M144,165.3 m-6.7,0 a6.7,6.7 0,1 0,13.4 0 a6.7,6.7 0,1 0,-13.4 0"
+        android:fillColor="#FF78E0C4"/>
+    <path android:pathData="M125.3,200 L125.3,210.7 C125.3,216 120,218.7 112,221.3 C128,210.7 160,210.7 176,221.3 C168,218.7 162.7,216 162.7,210.7 L162.7,200"
+        android:fillColor="#FF78E0C4"/>
 </vector>
