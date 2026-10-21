@@ -1,16 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <!-- Legacy (pre-Android-8) launcher tile: dark rounded square + glyph -->
   <defs>
-    <radialGradient id="bg" gradientUnits="userSpaceOnUse" cx="54" cy="36" r="82">
-      <stop offset="0" stop-color="#141C2E"/>
-      <stop offset="1" stop-color="#07090D"/>
+    <radialGradient id="bg" gradientUnits="userSpaceOnUse" cx="54" cy="34" r="82">
+      <stop offset="0" stop-color="#102A31"/>
+      <stop offset="1" stop-color="#071118"/>
     </radialGradient>
-    <linearGradient id="acc" gradientUnits="userSpaceOnUse" x1="24" y1="28" x2="84" y2="80">
-      <stop offset="0" stop-color="#7FB3FF"/>
-      <stop offset="1" stop-color="#A78BFA"/>
-    </linearGradient>
   </defs>
   <rect x="0" y="0" width="108" height="108" rx="24" fill="url(#bg)"/>
-  <rect x="30" y="34" width="48" height="40" rx="7" fill="none" stroke="url(#acc)" stroke-width="4.5"/>
-  <path d="M 54 44.5 L 64.5 63.5 L 43.5 63.5 Z" fill="url(#acc)"/>
+  <g fill="none" stroke="#78E0C4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="28" y="31" width="52" height="44" rx="7" stroke-width="4.5"/>
+    <path d="M39 49 C47 41 61 41 69 49" stroke-width="4"/>
+    <path d="M45 56 C50 51 58 51 63 56" stroke-width="4"/>
+  </g>
+  <circle cx="54" cy="62" r="2.5" fill="#78E0C4"/>
+  <path d="M47 75 L47 79 C47 81 45 82 42 83 C48 79 60 79 66 83 C63 82 61 81 61 79 L61 75" fill="#78E0C4"/>
 </svg>
