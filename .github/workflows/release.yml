@@ -27,7 +27,8 @@ jobs:
           sed -i 's#https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_BUILD_VERSION}/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#' app/src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake
       - name: Prepare Android NDK toolchain
         run: |
-          sdkmanager "ndk;27.0.12077973"
+          SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)"
+          "$SDKMANAGER" "ndk;27.0.12077973"
           NDK_BIN="$ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin"
           sudo ln -sf "$NDK_BIN/aarch64-linux-android24-clang" "$NDK_BIN/aarch64-linux-android-gcc"
           sudo ln -sf "$NDK_BIN/armv7a-linux-androideabi24-clang" "$NDK_BIN/arm-linux-androideabi-gcc"
