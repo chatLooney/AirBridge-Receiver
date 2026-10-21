@@ -1,5 +1,6 @@
 name: Bootstrap AirBridge source
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'AirBridge-upstream-clean.patch.xz.b64'
@@ -14,6 +15,7 @@ jobs:
         run: |
           git clone --depth 1 --recurse-submodules https://github.com/tarek369/screendock.git upstream
           rsync -a --exclude='.git' upstream/ ./
+          rm -rf upstream
       - name: Apply AirBridge changes
         run: |
           base64 -d AirBridge-upstream-clean.patch.xz.b64 | xz -d > /tmp/airbridge.patch
@@ -31,11 +33,10 @@ jobs:
             cp "${out}/ic_launcher.png" "${out}/ic_launcher_round.png"
           done
           rsvg-convert -w 512 -h 512 design/icon/store_512.svg -o store/store_icon_512.png
-          rm -f AirBridge-upstream-clean.patch.xz.b64 .github/workflows/bootstrap.yml
       - name: Commit source
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A ':!.github/workflows/release.yml'
           git commit -m "Launch AirBridge 0.3.5"
           git push
