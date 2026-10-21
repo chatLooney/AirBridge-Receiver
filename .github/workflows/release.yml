@@ -26,6 +26,7 @@ jobs:
         run: |
           sed -i 's#https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_BUILD_VERSION}/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#' app/src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake
           sed -i '/set(FORWARD_ANDROID_NDK/a\        set(FORWARD_CC "${CMAKE_C_COMPILER}")\n        set(FORWARD_CXX "${CMAKE_CXX_COMPILER}")\n        set(FORWARD_AR "${CMAKE_AR}")\n        set(FORWARD_RANLIB "${CMAKE_RANLIB}")' app/src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake
+          sed -i 's#set(FORWARD_PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")#set(FORWARD_PATH "${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/")#' app/src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake
       - name: Prepare Android NDK toolchain
         run: |
           SDKMANAGER="$(find "$ANDROID_SDK_ROOT/cmdline-tools" -path '*/bin/sdkmanager' -type f | sort -V | tail -1)"
