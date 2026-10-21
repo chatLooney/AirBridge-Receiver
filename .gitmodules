@@ -1,0 +1,8 @@
+# UxPlay and ALAC are VENDORED (not submodules): the app patches lib/raop.c and
+# lib/raop_handlers.h for the receiver->sender touch event channel.
+[submodule "app/src/main/cpp/third_party/libplist"]
+	path = app/src/main/cpp/third_party/libplist
+	url = https://github.com/libimobiledevice/libplist.git
+[submodule "app/src/main/cpp/third_party/openssl-cmake"]
+	path = app/src/main/cpp/third_party/openssl-cmake
+	url = https://github.com/viaduck/openssl-cmake.git
