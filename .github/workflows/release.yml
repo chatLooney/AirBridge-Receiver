@@ -1,6 +1,11 @@
 name: Build release
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to receive the signed APK
+        required: true
+        default: v0.3.5-vc9-build4
   push:
     tags: ['v*-vc*']
 permissions:
@@ -20,6 +25,12 @@ jobs:
       - name: Use official OpenSSL source
         run: |
           sed -i 's#https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_BUILD_VERSION}/openssl-${OPENSSL_BUILD_VERSION}.tar.gz#' app/src/main/cpp/third_party/openssl-cmake/cmake/BuildOpenSSL.cmake
+      - name: Prepare Android NDK toolchain
+        run: |
+          sdkmanager "ndk;27.0.12077973"
+          NDK_BIN="$ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          sudo ln -sf "$NDK_BIN/aarch64-linux-android24-clang" "$NDK_BIN/aarch64-linux-android-gcc"
+          sudo ln -sf "$NDK_BIN/armv7a-linux-androideabi24-clang" "$NDK_BIN/arm-linux-androideabi-gcc"
       - name: Restore signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.AIRBRIDGE_KEYSTORE_BASE64 }}
@@ -32,9 +43,12 @@ jobs:
       - name: Test and build
         run: ./gradlew testReleaseUnitTest assembleRelease
       - name: Name APK
-        run: cp app/build/outputs/apk/release/app-release.apk "AirBridge-${GITHUB_REF_NAME}.apk"
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+        run: cp app/build/outputs/apk/release/app-release.apk "AirBridge-${RELEASE_TAG}.apk"
       - uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
           files: AirBridge-*.apk
           generate_release_notes: true
+          tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
