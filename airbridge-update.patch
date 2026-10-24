@@ -1,5 +1,5 @@
 diff --git a/app/build.gradle.kts b/app/build.gradle.kts
-index 55da27e..e76d350 100644
+index 55da27e..1d30645 100644
 --- a/app/build.gradle.kts
 +++ b/app/build.gradle.kts
 @@ -21,8 +21,8 @@ android {
@@ -8,8 +8,8 @@ index 55da27e..e76d350 100644
          targetSdk = 36
 -        versionCode = 9
 -        versionName = "0.3.5"
-+        versionCode = 10
-+        versionName = "0.3.6"
++        versionCode = 11
++        versionName = "0.3.7"
  
          testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
  
@@ -41,8 +41,64 @@ index a4a1ddc..f6afa87 100644
          <activity
              android:name=".ui.MainActivity"
              android:exported="true"
+diff --git a/app/src/main/cpp/android_raop_callbacks.c b/app/src/main/cpp/android_raop_callbacks.c
+index 53a0234..1c98fc7 100644
+--- a/app/src/main/cpp/android_raop_callbacks.c
++++ b/app/src/main/cpp/android_raop_callbacks.c
+@@ -55,6 +55,7 @@ int android_callbacks_init(JNIEnv *env, jobject callback_handler,
+     ctx->on_video_size         = (*env)->GetMethodID(env, cls, "onVideoSize",        "(FFFF)V");
+     ctx->on_audio_data         = (*env)->GetMethodID(env, cls, "onAudioData",        "([BIJI)V");
+     ctx->on_audio_format       = (*env)->GetMethodID(env, cls, "onAudioFormat",      "(IIZ)V");
++    ctx->on_audio_flush        = (*env)->GetMethodID(env, cls, "onAudioFlush",       "()V");
+     ctx->on_volume_change      = (*env)->GetMethodID(env, cls, "onVolumeChange",     "(F)V");
+     ctx->on_display_pin        = (*env)->GetMethodID(env, cls, "onDisplayPin",       "(Ljava/lang/String;)V");
+     ctx->on_client_request     = (*env)->GetMethodID(env, cls, "onClientRequest",
+@@ -75,7 +76,7 @@ int android_callbacks_init(JNIEnv *env, jobject callback_handler,
+     if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+     if (!ctx->on_connection_init || !ctx->on_connection_destroy ||
+         !ctx->on_connection_reset || !ctx->on_video_data || !ctx->on_video_size ||
+-        !ctx->on_audio_data || !ctx->on_audio_format || !ctx->on_volume_change ||
++        !ctx->on_audio_data || !ctx->on_audio_format || !ctx->on_audio_flush || !ctx->on_volume_change ||
+         !ctx->on_display_pin || !ctx->on_client_request || !ctx->on_audio_metadata ||
+         !ctx->on_cover_art || !ctx->on_audio_progress || !ctx->on_hls_play ||
+         !ctx->on_hls_stop || !ctx->on_hls_scrub || !ctx->on_hls_rate) {
+@@ -225,6 +226,13 @@ static void cb_conn_init(void *cls)
+     LOGI("conn_init");
+ }
+ 
++static void cb_audio_flush(void *cls)
++{
++    android_callback_ctx_t *ctx = (android_callback_ctx_t *) cls;
++    JNIEnv *env = cb_get_env(ctx);
++    if (env) { (*env)->CallVoidMethod(env, ctx->callback_ref, ctx->on_audio_flush); cb_check(env, "onAudioFlush"); }
++}
++
+ static void cb_conn_destroy(void *cls)
+ {
+     android_callback_ctx_t *ctx = (android_callback_ctx_t *) cls;
+@@ -629,7 +637,7 @@ void android_callbacks_fill(raop_callbacks_t *cbs)
+     cbs->conn_init         = cb_conn_init;
+     cbs->conn_destroy      = cb_conn_destroy;
+     cbs->conn_teardown     = cb_conn_teardown;
+-    cbs->audio_flush       = cb_noop;
++    cbs->audio_flush       = cb_audio_flush;
+     cbs->video_flush       = cb_noop;
+     cbs->audio_set_client_volume = cb_audio_set_client_volume;
+     cbs->audio_set_volume  = cb_audio_set_volume;
+diff --git a/app/src/main/cpp/android_raop_callbacks.h b/app/src/main/cpp/android_raop_callbacks.h
+index 044dbb3..8c82f90 100644
+--- a/app/src/main/cpp/android_raop_callbacks.h
++++ b/app/src/main/cpp/android_raop_callbacks.h
+@@ -32,6 +32,7 @@ typedef struct android_callback_ctx_s {
+     jmethodID on_video_size;
+     jmethodID on_audio_data;
+     jmethodID on_audio_format;
++    jmethodID on_audio_flush;         /* ()V */
+     jmethodID on_volume_change;
+     jmethodID on_display_pin;
+     /* v2 contract (see PLAN.md / RaopCallbackHandler.kt) */
 diff --git a/app/src/main/cpp/native_bridge.cpp b/app/src/main/cpp/native_bridge.cpp
-index c8381be..dac5a60 100644
+index c8381be..7631f0c 100644
 --- a/app/src/main/cpp/native_bridge.cpp
 +++ b/app/src/main/cpp/native_bridge.cpp
 @@ -142,7 +142,7 @@ static jobject parse_txt_to_map(JNIEnv *env, const char *txt, int len)
@@ -50,12 +106,25 @@ index c8381be..dac5a60 100644
  Java_com_cressu_screendock_bridge_NativeBridge_nativeGetVersion(JNIEnv *env, jobject)
  {
 -    const char *v = "AirBridge 0.3.5 (UxPlay core " GLOBAL_VERSION ")";
-+    const char *v = "AirBridge 0.3.6 (UxPlay core " GLOBAL_VERSION ")";
++    const char *v = "AirBridge 0.3.7 (UxPlay core " GLOBAL_VERSION ")";
      return env->NewStringUTF(v);
  }
  
+diff --git a/app/src/main/java/com/cressu/screendock/bridge/RaopCallbackHandler.kt b/app/src/main/java/com/cressu/screendock/bridge/RaopCallbackHandler.kt
+index 0f0b1b3..5533481 100644
+--- a/app/src/main/java/com/cressu/screendock/bridge/RaopCallbackHandler.kt
++++ b/app/src/main/java/com/cressu/screendock/bridge/RaopCallbackHandler.kt
+@@ -26,6 +26,8 @@ interface RaopCallbackHandler {
+     // ct: 2 = ALAC, 4 = AAC-LC, 8 = AAC-ELD
+     fun onAudioData(data: ByteArray, ct: Int, ntpTimeNs: Long, seqNum: Int)
+     fun onAudioFormat(ct: Int, samplesPerFrame: Int, usingScreen: Boolean)
++    /** Sender discarded its audio timeline, e.g. after seeking. JNI: ()V. */
++    fun onAudioFlush() {}
+     fun onVolumeChange(volume: Float)
+ 
+     // ---- PIN ----
 diff --git a/app/src/main/java/com/cressu/screendock/renderer/AudioRenderer.kt b/app/src/main/java/com/cressu/screendock/renderer/AudioRenderer.kt
-index 7e455f7..03bc85b 100644
+index 7e455f7..835eea4 100644
 --- a/app/src/main/java/com/cressu/screendock/renderer/AudioRenderer.kt
 +++ b/app/src/main/java/com/cressu/screendock/renderer/AudioRenderer.kt
 @@ -5,6 +5,7 @@ import android.media.AudioFormat
@@ -83,7 +152,50 @@ index 7e455f7..03bc85b 100644
  
      /**
       * Kill-switch for the software ALAC fallback. When `false` a device that
-@@ -256,7 +257,7 @@ class AudioRenderer {
+@@ -92,6 +93,30 @@ class AudioRenderer {
+ 
+     // ---- public API --------------------------------------------------------
+ 
++    /** Keep the negotiated format, but discard decoder/output audio from before a seek. */
++    fun flush() {
++        codecLock.withLock {
++            if (released) return@withLock
++            flushPipelineLocked()
++        }
++    }
++
++    private fun flushPipelineLocked() {
++        audioTrack?.let { track ->
++            track.pause()
++            track.flush() // Android flush only discards queued PCM while paused/stopped.
++        }
++        try {
++            codec?.flush()
++        } catch (failure: IllegalStateException) {
++            onCodecFailureLocked(configuredCt)
++        }
++        hasSyncAnchor = false
++        consecutiveDrops = 0
++        audioTrack?.play()
++        Log.i(TAG, "Audio pipeline flushed; awaiting new timestamp anchor")
++    }
++
+     /**
+      * Called when the audio format is established by the sender. (Re)configures
+      * the decoder pipeline for [ct] + [samplesPerFrame] while keeping the
+@@ -243,9 +268,8 @@ class AudioRenderer {
+      * - drift < 0 → packet arrived EARLY (before its playout time). AirPlay
+      *   senders intentionally lead audio by ~100–200 ms, so this is the normal
+      *   case: sleep down to a small lead, like a jitter buffer.
+-     * - drift > 0 → packet arrived LATE (playout time already passed): play
+-     *   immediately; if very late, drop to catch up (capped at [MAX_DROPS]
+-     *   consecutive, beyond which we re-anchor instead of dropping forever).
++     * - drift > 80 ms → clear stale decoder/output audio and re-anchor.
++     * Large forward jumps also re-anchor instead of sleeping per packet.
+      */
+     private fun syncAudio(ptsNs: Long): Boolean {
+         if (!hasSyncAnchor) {
+@@ -256,7 +280,7 @@ class AudioRenderer {
              return true
          }
  
@@ -92,7 +204,48 @@ index 7e455f7..03bc85b 100644
          val nowNs = System.nanoTime()
          val driftNs = nowNs - expectedNs   // negative = early, positive = late
  
-@@ -459,7 +460,12 @@ class AudioRenderer {
+@@ -265,6 +289,19 @@ class AudioRenderer {
+         }
+         syncDbgCount++
+ 
++        // A seek or a stalled receiver invalidates the old timeline. Sleeping
++        // 100 ms on every future packet builds backlog; dropping compressed AAC
++        // packets produces gaps and can disturb decoder overlap state. Clear
++        // stale PCM/decoder output and start with this packet instead.
++        if (AudioTimeline.needsReset(driftNs, extraDelayMs)) {
++            Log.w(TAG, "Audio timeline discontinuity: ${driftNs / 1_000_000}ms")
++            flushPipelineLocked()
++            ptsBaseNs = ptsNs
++            wallBaseNs = System.nanoTime()
++            hasSyncAnchor = true
++            return true
++        }
++
+         if (driftNs < -AHEAD_THRESHOLD_NS) {
+             // Early — sleep until we're LEAD from the intended playout time.
+             val sleepMs = (-driftNs - LEAD_NS) / 1_000_000
+@@ -278,20 +315,6 @@ class AudioRenderer {
+             return true
+         }
+ 
+-        if (driftNs > BEHIND_THRESHOLD_NS) {
+-            // Late — drop to let the stream catch up.
+-            consecutiveDrops++
+-            if (consecutiveDrops > MAX_DROPS) {
+-                // Too far behind — re-anchor instead of endless silence.
+-                Log.w(TAG, "syncAudio: ${consecutiveDrops} consecutive drops, re-anchoring")
+-                ptsBaseNs = ptsNs
+-                wallBaseNs = System.nanoTime()
+-                consecutiveDrops = 0
+-                return true
+-            }
+-            return false
+-        }
+-
+         consecutiveDrops = 0
+         return true
+     }
+@@ -459,7 +482,12 @@ class AudioRenderer {
      private fun writePcmLocked(track: AudioTrack, pcm: ByteArray, length: Int) {
          if (length <= 0) return
          try {
@@ -106,7 +259,7 @@ index 7e455f7..03bc85b 100644
          } catch (t: Throwable) {
              Log.w(TAG, "AudioTrack.write failed", t)
          }
-@@ -489,10 +495,9 @@ class AudioRenderer {
+@@ -489,10 +517,9 @@ class AudioRenderer {
              Log.w(TAG, "getMinBufferSize=$minBuf; using fallback buffer of $MAX_BUFFER_BYTES bytes")
              minBuf = MAX_BUFFER_BYTES
          }
@@ -120,7 +273,7 @@ index 7e455f7..03bc85b 100644
  
          val audioFormat = AudioFormat.Builder()
              .setSampleRate(SAMPLE_RATE)
-@@ -505,12 +510,15 @@ class AudioRenderer {
+@@ -505,12 +532,15 @@ class AudioRenderer {
              .build()
  
          val track = try {
@@ -138,7 +291,7 @@ index 7e455f7..03bc85b 100644
          } catch (t: Throwable) {
              Log.e(TAG, "AudioTrack creation failed", t)
              null
-@@ -575,8 +583,8 @@ class AudioRenderer {
+@@ -575,17 +605,15 @@ class AudioRenderer {
          private const val CHANNEL_MASK = AudioFormat.CHANNEL_OUT_STEREO
          private const val ENCODING = AudioFormat.ENCODING_PCM_16BIT
  
@@ -149,6 +302,29 @@ index 7e455f7..03bc85b 100644
  
          private const val MIN_DB = -144.0f
          private const val MAX_DB = 0.0f
+ 
+         // A/V sync thresholds (human perception of A/V drift is ~40–80 ms).
+         private const val AHEAD_THRESHOLD_NS = 40_000_000L   // 40 ms ahead → sleep to pace
+-        private const val BEHIND_THRESHOLD_NS = 80_000_000L  // 80 ms behind → drop to catch up
+         private const val LEAD_NS = 20_000_000L              // keep 20 ms lead after sleeping
+-        private const val MAX_DROPS = 3                      // cap consecutive drops before re-anchor (fast recovery)
+ 
+         // RAOP codec types.
+         private const val CT_NONE = 0
+diff --git a/app/src/main/java/com/cressu/screendock/renderer/AudioTimeline.kt b/app/src/main/java/com/cressu/screendock/renderer/AudioTimeline.kt
+new file mode 100644
+index 0000000..1524384
+--- /dev/null
++++ b/app/src/main/java/com/cressu/screendock/renderer/AudioTimeline.kt
+@@ -0,0 +1,8 @@
++package com.cressu.screendock.renderer
++
++/** Timing policy shared by the renderer and JVM regression tests. */
++internal object AudioTimeline {
++    fun needsReset(driftNs: Long, extraDelayMs: Int): Boolean =
++        driftNs > 80_000_000L ||
++            driftNs < -250_000_000L - extraDelayMs.coerceIn(0, 250) * 1_000_000L
++}
 diff --git a/app/src/main/java/com/cressu/screendock/renderer/VideoRenderer.kt b/app/src/main/java/com/cressu/screendock/renderer/VideoRenderer.kt
 index b00b4f9..530eee0 100644
 --- a/app/src/main/java/com/cressu/screendock/renderer/VideoRenderer.kt
@@ -211,7 +387,7 @@ index b00b4f9..530eee0 100644
          }
  
 diff --git a/app/src/main/java/com/cressu/screendock/service/AirPlayService.kt b/app/src/main/java/com/cressu/screendock/service/AirPlayService.kt
-index 9e50b90..ecb8140 100644
+index 9e50b90..18ebf7a 100644
 --- a/app/src/main/java/com/cressu/screendock/service/AirPlayService.kt
 +++ b/app/src/main/java/com/cressu/screendock/service/AirPlayService.kt
 @@ -119,6 +119,8 @@ class AirPlayService : Service(), RaopCallbackHandler {
@@ -265,6 +441,17 @@ index 9e50b90..ecb8140 100644
          if (!hasNetwork) { _errorMessage.value = getString(R.string.error_no_network); refreshAll() }
          ops.trySend(Op.Readvertise)
      }
+@@ -610,6 +628,10 @@ class AirPlayService : Service(), RaopCallbackHandler {
+         audioRenderer?.feedAudio(data, ct, ntpTimeNs, seqNum)
+     }
+ 
++    override fun onAudioFlush() {
++        audioRenderer?.flush()
++    }
++
+     override fun onAudioFormat(ct: Int, samplesPerFrame: Int, usingScreen: Boolean) {
+         Log.i(TAG, "audio format: ct=$ct spf=$samplesPerFrame usingScreen=$usingScreen")
+         audioRenderer?.onFormat(ct, samplesPerFrame)
 diff --git a/app/src/main/java/com/cressu/screendock/settings/PlaybackTuning.kt b/app/src/main/java/com/cressu/screendock/settings/PlaybackTuning.kt
 new file mode 100644
 index 0000000..2f24186
@@ -2408,6 +2595,36 @@ zx|Q4rf2a=6iqUivgR=KDqjM_Pg@sbMTLeLjH$pY^H`<)NQgF+ce~0$Kk|l6Dx>@F&
 zksBrF$XKHlH>QHlh`N2w^V-DAdeK)`PcTH)0=bgEpj3A7h!;)=`j^8}2~e2Nq33uT
 hb<N(2{<p?2pPp+$w*EtWGyud$>7BY<y^KZp{{X8Fi_ri8
 
+diff --git a/app/src/test/java/com/cressu/screendock/renderer/AudioTimelineTest.kt b/app/src/test/java/com/cressu/screendock/renderer/AudioTimelineTest.kt
+new file mode 100644
+index 0000000..ef09d31
+--- /dev/null
++++ b/app/src/test/java/com/cressu/screendock/renderer/AudioTimelineTest.kt
+@@ -0,0 +1,24 @@
++package com.cressu.screendock.renderer
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++class AudioTimelineTest {
++    @Test fun normalJitterKeepsTimeline() {
++        assertFalse(AudioTimeline.needsReset(-40_000_000L, 0))
++        assertFalse(AudioTimeline.needsReset(40_000_000L, 0))
++    }
++    @Test fun lateAudioRecoversWithoutDroppingCompressedPackets() {
++        assertFalse(AudioTimeline.needsReset(80_000_000L, 0))
++        assertTrue(AudioTimeline.needsReset(80_000_001L, 0))
++    }
++    @Test fun forwardAndBackwardSeeksResetTimeline() {
++        assertTrue(AudioTimeline.needsReset(-5_000_000_000L, 0))
++        assertTrue(AudioTimeline.needsReset(5_000_000_000L, 0))
++    }
++    @Test fun manualDelayDoesNotLookLikeSeek() {
++        assertFalse(AudioTimeline.needsReset(-400_000_000L, 250))
++        assertTrue(AudioTimeline.needsReset(-500_000_001L, 250))
++    }
++}
 diff --git a/app/src/test/java/com/cressu/screendock/settings/PlaybackTuningTest.kt b/app/src/test/java/com/cressu/screendock/settings/PlaybackTuningTest.kt
 new file mode 100644
 index 0000000..c3da3be
@@ -2513,4 +2730,3 @@ index 1f92341..d0325cc 100644
 +  <text x="110" y="92" font-family="DejaVu Sans, sans-serif" font-size="29" fill="#F0F5F7">AirBridge</text>
 +  <text x="111" y="114" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#A7B6C5">AirPlay receiver</text>
  </svg>
-
