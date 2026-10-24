@@ -4,6 +4,16 @@
 
 <p align="center">An open-source AirPlay receiver for Android phones, tablets and TVs.</p>
 
+## Screenshots
+
+AirBridge 0.3.6 on Android: receiver home, updates and audio sync, and display settings.
+
+<p align="center">
+  <img src="docs/receiver.png" alt="AirBridge receiver ready to receive a screen mirroring connection" width="30%">
+  <img src="docs/updates-and-audio-sync.png" alt="Settings with app updates, connection presets and live audio sync controls" width="30%">
+  <img src="docs/display-and-quality.png" alt="Display settings with scaling, resolution, frame rate and codec options" width="30%">
+</p>
+
 ## Features
 
 - Mirror an iPhone, iPad or Mac display over the local network.
